@@ -12,27 +12,43 @@
 
 #include "fdf.h"
 
-t_point		*new_point(void)
+static t_point	*new_point(int j, int k, int *i, t_map *map)
 {
 	t_point		*new;
 
 	new = (t_point *)malloc(sizeof(t_point));
-	new->x = 0;
-	new->y = 0;
-	new->z = 0;
-	new->color = 0xFFFFFF;
+	new->x = k;
+	new->y = j;
+	new->z = ft_atoi(&map->lmap[i[0]]);
+	while (map->lmap[i[0]] >= '0' && map->lmap[i[0]] <= '9')
+		i[0]++;
+	if (map->lmap[i[0]] == ',')
+	{
+		i[0]++;
+		// new->color = ft_atoi_base(&map->lmap[i[0]], 16);
+		new->color = 0x008000 + new->z * 10;
+		while (map->lmap[i[0]] != ' ')
+			i[0]++;
+	}
+	else
+		new->color = 0x008000 + new->z * 20;
 	return (new);
 }
 
-void	writer(t_map *map, int i, int j, int k)
+static int		writer(t_map *map, int i, int j, int k)
 {
+	if (!(map->point = (t_point ***)malloc(sizeof(t_point **) * map->hgt)))
+		return (-1);
+	while (i <= map->hgt)
+		if (!(map->point[i++] = (t_point **)malloc(8 * map->wid)))
+			return (-1);
+	i = 0;
 	while (map->lmap[i])
 	{
 		if (map->lmap[i] >= '0' && map->lmap[i] <= '9')
 		{
-			map->point[j][k++]->z = ft_atoi(&map->lmap[i]);
-			while (map->lmap[i] >= '0' && map->lmap[i] <= '9')
-				i++;
+			map->point[j][k] = new_point(j, k, &i, map);
+			k++;
 		}
 		if (map->lmap[i] == '\n')
 		{
@@ -41,52 +57,37 @@ void	writer(t_map *map, int i, int j, int k)
 		}
 		i++;
 	}
-	i = 0;
-	j = 0;
-	while (i < map->hgt)
-	{
-		while (j < map->wid)
-		{
-			printf("%3.0f ", map->point[i][j]->z);
-			j++;
-		}
-		printf("\n");
-		j = 0;
-		i++;
-	}
-	exit (0);
+	return (0);
 }
 
-void	valider(t_map *map, int i, int j)
+static int		valider(t_map *map, int i, int j)
 {
-	while (map->lmap[i])
+	if (map->lmap[i] == ' ' || map->lmap[i] >= '0' || map->lmap[i] <= '9'
+	|| map->lmap[i] == ',' || map->lmap[i] <= 'F' || map->lmap[i] >= 'A'
+	|| map->lmap[i] == 'x')
 	{
-		if (map->lmap[i] == ' ' && map->hgt == 0)
-			map->wid++;
-		if (map->lmap[i] == ' ')
-			i++; 
-		if (map->lmap[i] == '\n')
-			map->hgt++;
-		i++;
-	}
-	printf("WID = %d\nHGT = %d\n", map->wid, map->hgt);
-	i = 0;
-	map->point = (t_point ***)malloc(sizeof(t_point **) * (map->hgt));
-	while (i <= map->hgt)
-	{
-		map->point[i] = (t_point **)malloc(sizeof(t_point *) * (map->wid));
-		while (j <= map->wid)
+		while (map->lmap[i])
 		{
-			map->point[i][j] = new_point();
-			j++;
+			map->wid += map->lmap[i] == ' ' && !map->hgt ? 1 : 0;
+			j += map->lmap[i] == ' ' ? 1 : 0;
+			i += map->lmap[i] == ' ' ? 1 : 0;
+			if (map->lmap[i] == '\n')
+			{
+				if (j + 1 != map->wid)
+					return (-1);
+				j = 0;
+				map->hgt++;
+			}
+			i++;
 		}
-		j = 0;
-		i++;
 	}
+	else
+		return (-1);
 	writer(map, 0, 0, 0);
+	return (0);
 }
 
-int		reader(int fd, t_map *map)
+int				reader(int fd, t_map *map)
 {
 	char	buf[BUFF_SIZE + 1];
 	int		ret;
@@ -101,19 +102,19 @@ int		reader(int fd, t_map *map)
 	return (0);
 }
 
-void	*newmap(t_map *map)
+void			*newmap(t_map *map)
 {
 	map->lmap = ft_strnew(1);
 	map->wid = 1;
 	map->hgt = 0;
-	map->step = 10;
-	map->x_s = 0;
-	map->y_s = 0;
-	map->z_s = 2;
+	map->step = 50;
+	map->x_s = 800;
+	map->y_s = 300;
+	map->z_s = 4;
 	return (map);
 }
 
-void	image_set_pixel(t_img *img, int x, int y, int color)
+void			image_set_pixel(t_img *img, int x, int y, int color)
 {
 	if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT)
 		return ;
@@ -133,29 +134,62 @@ static t_img	*new_image(t_map *map)
 	return (img);
 }
 
-int		main(int argc, char **argv)
+void			clear_image(t_map *map)
+{
+	ft_bzero(map->img->ptr, WIDTH * HEIGHT * map->img->bits);
+}
+
+int				key_press(int keycode, t_map *map)
+{
+	clear_image(map);
+	if (keycode == 69)
+		map->step += 1;
+	if (keycode == 78)
+		map->step -= 1;
+	if (keycode == 13)
+		map->z_s += 1;
+	if (keycode == 1)
+		map->z_s -= 1;
+	if (keycode == 53)
+		exit(0);
+	printer(map);
+	return (0);
+}
+
+int				main(int argc, char **argv)
 {
 	int		fd;
-	t_map	map;
+	t_map	*map;
 
 	if (argc != 2)
 		return (0);
-	newmap(&map);
+	if (!(map = (t_map *)malloc(sizeof(t_map))))
+		return (0);
+	newmap(map);
 	fd = open(argv[1], O_RDONLY);
-	if(reader(fd, &map))
+	if (reader(fd, map))
 	{
 		write(1, "read error\n", 12);
 		return (0);
 	}
-	valider(&map, 0, 0);
-	if ((map.mlx = mlx_init()) == NULL)
+	if (valider(map, 0, 0))
+	{
+		write(1, "invalid map\n", 13);
+		return (0);
+	}
+	if ((map->mlx = mlx_init()) == NULL)
 	{
 		write(1, "mlx init fail\n", 21);
 		return (0);
 	}
-	map.wdw = mlx_new_window(map.mlx, WIDTH, HEIGHT, "my awesome fdf");
-	map.img = new_image(&map);
-	printer(&map);
-	mlx_loop(map.mlx);
+	if (!(map->wdw = mlx_new_window(map->mlx, WIDTH, HEIGHT, "my awesome fdf")))
+	{
+		write(1, "mlx window fail\n", 17);
+		return (0);
+	}
+	map->img = new_image(map);
+	printer(map);
+	mlx_key_hook(map->wdw, key_press, map);
+	mlx_loop(map->mlx);
 	return (0);
 }

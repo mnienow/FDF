@@ -16,8 +16,8 @@
 # include "libft/libft.h"
 # include "./miniLibX/mlx.h"
 # include "stdio.h"
-# define WIDTH 1280
-# define HEIGHT 720
+# define WIDTH 1600
+# define HEIGHT 1200
 # define CHN(y) if ((y) == 0) return (-1)
 # include <fcntl.h>
 # include <unistd.h>
@@ -27,7 +27,7 @@
 typedef struct		s_img
 {
 	void		*image;
-	char		*ptr;
+	void		*ptr;
 	int			bits;
 	int			size_line;
 	int			endian;
@@ -56,7 +56,7 @@ typedef struct s_map
     int			x_s;
 	int			y_s;
 	int			z_s;
-    double      step;
+    int			step;
     int         sign_x;
     int         sign_y;
 	t_img		*img;
@@ -66,5 +66,6 @@ typedef struct s_map
 int     main(int argc, char **argv);
 void	printer(t_map *map);
 void	image_set_pixel(t_img *img, int x, int y, int color);
+int 	ft_atoi_base(const char *str, int str_base);
 
 #endif

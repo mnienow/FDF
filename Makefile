@@ -1,7 +1,7 @@
 NAME	= fdf
 
 # src / obj files
-SRC		= main.c fdf.c
+SRC		= main.c fdf.c atoi_base.c
 
 OBJ		= $(SRC:.c=.o)
 

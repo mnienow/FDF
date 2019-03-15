@@ -12,70 +12,70 @@
 
 #include "fdf.h"
 
-static	void	paint_line(t_map *map, int dx, int dy)
+static	void	paint_line(t_map *map, int *d, int y, int x)
 {
 	int fault;
 	int fault2;
 
-	fault = dx - dy;
-	image_set_pixel(map->img, map->x1, map->y1, 0xFFFFFF);
+	fault = d[1] - d[0];
+	image_set_pixel(map->img, map->x1, map->y1, map->point[0][0]->color);
 	while (map->x0 != map->x1 || map->y0 != map->y1)
 	{
-		image_set_pixel(map->img, map->x0, map->y0, 0xFFFFFF);
+		image_set_pixel(map->img, map->x0, map->y0, map->point[y][x]->color);
 		fault2 = fault * 2;
-		if (fault2 > -dy)
+		if (fault2 > -d[1])
 		{
-			fault -= dy;
+			fault -= d[0];
 			map->x0 += map->sign_x;
 		}
-		if (fault2 < dx)
+		if (fault2 < d[1])
 		{
-			fault += dx;
+			fault += d[1];
 			map->y0 += map->sign_y;
 		}
 	}
 }
 
-void			paint_map(t_map *map)
+void			paint_map(t_map *map, int y, int x)
 {
-	int dx;
-	int dy;
+	int	d[2];
 
-	dx = abs(map->x1 - map->x0);
-	dy = abs(map->y1 - map->y0);
+	d[0] = abs(map->y1 - map->y0);
+	d[1] = abs(map->x1 - map->x0);
 	map->sign_x = map->x0 < map->x1 ? 1 : -1;
 	map->sign_y = map->y0 < map->y1 ? 1 : -1;
-	paint_line(map, dx, dy);
+	paint_line(map, d, y, x);
 }
 
-static void iso(int *x, int *y, t_point	*point)
+static void iso(int *x, int *y, int z)
 {
     int previous_x;
     int previous_y;
 
     previous_x = *x;
     previous_y = *y;
-    point->x = (previous_x - previous_y) * cos(0.523599);
-    point->y = (point->z * -1) + (previous_x + previous_y) * sin(0.523599);
+    *x = (previous_x - previous_y) * cos(0.46373398);
+    *y = -z + (previous_x + previous_y) * sin(0.46373398);
 }
 
-static	void	draw_line(t_map *map, int y, int x, int x_or_y)
+static void		draw_line(t_map *map, int y, int x, int y_or_x)
 {
-	iso(&y, &x, map->point[x + (y * map->wid)]);
-	map->x0 = map->x_s + (x * map->step);
-	map->y0 = map->y_s + (y * map->step) - map->point[x + (y * map->wid - 1)]->z * map->z_s;
-	if (x_or_y)
+	map->x0 = map->x_s + (map->point[y][x]->x * map->step);
+	map->y0 = map->y_s + (map->point[y][x]->y * map->step);
+	iso(&map->x0, &map->y0, map->point[y][x]->z * map->z_s);
+	if (y_or_x)
 	{
-		map->x1 = map->x_s + ((map->point[x + (y * map->wid)]->x + 1) * map->step);
-		map->y1 = map->y_s + (y * map->step) - map->point[x + 1 + (y * map->wid - 1)]->z * map->z_s;
-
+		map->x1 = map->x_s + ((map->point[y][x]->x + 1) * map->step);
+		map->y1 = map->y_s + (map->point[y][x]->y * map->step);
+		iso(&map->x1, &map->y1, map->point[y][x + 1]->z * map->z_s);
 	}
 	else
 	{
-		map->x1 = map->x_s + (x * map->step);
-		map->y1 = map->y_s + ((y + 1) * map->step) - map->point[x + ((y + 1) * map->wid - 1)]->z * map->z_s;
+		map->x1 = map->x_s + (map->point[y][x]->x * map->step);
+		map->y1 = map->y_s + ((map->point[y][x]->y + 1) * map->step);
+		iso(&map->x1, &map->y1, map->point[y + 1][x]->z * map->z_s);
 	}
-	paint_map(map);
+	paint_map(map, y, x);
 }
 
 void	printer(t_map *map)
