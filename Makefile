@@ -1,27 +1,22 @@
 NAME	= fdf
 
-# src / obj files
-SRC		= main.c fdf.c atoi_base.c
+SRC		= main.c newreader.c draw.c image.c atoi_base.c control.c color.c
 
-OBJ		= $(SRC:.c=.o)
+OBJ		= $(addprefix $(OBJDIR),$(SRC:.c=.o))
 
-# compiler
 CC		= gcc
-CFLAGS	= -Wall -Wextra -Werror -g
+CFLAGS	= -Wall -Wextra -Werror
 
-# mlx library
 MLX		= ./miniLibX/
 MLX_LIB	= $(addprefix $(MLX),mlx.a)
 MLX_INC	= -I ./miniLibX
 MLX_LNK	= -L ./miniLibX -l mlx -framework OpenGL -framework AppKit
 
-# ft library
 FT		= ./libft/
 FT_LIB	= $(addprefix $(FT),libft.a)
-FT_INC	= -I ./libft
+FT_INC	= -I ./libft/includes
 FT_LNK	= -L ./libft -l ft
 
-# directories
 SRCDIR	= ./src/
 INCDIR	= ./includes/
 OBJDIR	= ./obj/
@@ -29,6 +24,10 @@ OBJDIR	= ./obj/
 all: obj $(FT_LIB) $(MLX_LIB) $(NAME)
 
 obj:
+	mkdir -p $(OBJDIR)
+
+$(OBJDIR)%.o:$(SRCDIR)%.c
+	$(CC) $(CFLAGS) $(MLX_INC) $(FT_INC) -I $(INCDIR) -o $@ -c $<
 
 $(FT_LIB):
 	make -C $(FT)
